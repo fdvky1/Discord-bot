@@ -1,0 +1,4 @@
+.vscode
+.commandCache.json
+.env
+!.env.example
