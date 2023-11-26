@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	_ "github.com/fdvky1/Discord-bot/cmd"
 	"github.com/fdvky1/Discord-bot/embed"
 	"github.com/fdvky1/Discord-bot/entity"
@@ -18,6 +20,21 @@ type BotClient map[string]*ken.Ken
 type ConnectParams struct {
 	Id    string
 	Token string
+}
+
+// fix error import cycle
+type LogMiddleware struct{}
+
+var (
+	_ ken.MiddlewareBefore = (*LogMiddleware)(nil)
+)
+
+func (c *LogMiddleware) Before(ctx *ken.Ctx) (next bool, err error) {
+	cmd := ctx.GetCommand()
+	token := ctx.GetSession().Token
+	SendLog(FindIdByToken(token), fmt.Sprintf("Execute: %s", cmd.Name()))
+	next = true
+	return
 }
 
 func Connect(params ConnectParams) (*ken.Ken, error) {
@@ -48,6 +65,10 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 			availableCmds...,
 		)
 	}
+
+	k.RegisterMiddlewares(
+		new(LogMiddleware),
+	)
 
 	k.Session().AddHandlerOnce(func(s *discordgo.Session, evt *discordgo.Connect) {
 		Clients[params.Id] = k
