@@ -125,6 +125,11 @@ func main() {
 			return c.Status(400).SendString("Please set the bot token on the setting")
 		}
 
+		session := core.Clients[c.Locals("User-Id").(string)]
+		if session != nil {
+			session.Session().Close()
+		}
+
 		if _, err := core.Connect(core.ConnectParams{
 			Id:    c.Locals("User-Id").(string),
 			Token: "Bot " + c.Locals("Bot-Token").(string),
