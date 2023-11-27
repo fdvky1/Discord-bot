@@ -75,7 +75,7 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 	)
 
 	k.Session().AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		if m.GuildID != "" || m.Author.ID == s.State.User.ID {
+		if m.GuildID == "" || m.Author.ID == s.State.User.ID {
 			return
 		}
 		note, _ := repo.NoteRepository.Get(params.Id, m.GuildID, m.Content)
