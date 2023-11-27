@@ -9,7 +9,14 @@ import (
 
 type PingCommand struct{}
 
-var _ ken.SlashCommand = (*PingCommand)(nil)
+var (
+	_ ken.SlashCommand = (*PingCommand)(nil)
+	_ ken.DmCapable    = (*PingCommand)(nil)
+)
+
+func (c *PingCommand) IsDmCapable() bool {
+	return true
+}
 
 func (c *PingCommand) Name() string {
 	return "ping"

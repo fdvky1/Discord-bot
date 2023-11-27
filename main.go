@@ -28,7 +28,6 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 	core.Clients = make(map[string]*ken.Ken)
-	core.Cached = make(map[string]string)
 	core.WSClients = core.WebSocketClients{
 		Clients: make(map[string]*websocket.Conn),
 	}
@@ -38,6 +37,7 @@ func init() {
 	)
 	bunDB = core.NewPostgresDB()
 	_ = repo.NewDisabledCmdRepository(bunDB)
+	_ = repo.NewNoteRepository(bunDB)
 	// repo.DisabledCmdRepository = disabledCmdRepo
 }
 
@@ -64,7 +64,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 
 	if len(response) > 0 {
 		c.Locals("Bot-Token", response[0].BotToken)
-		core.Cached[response[0].BotToken] = user.ID
+		// core.Cached[response[0].BotToken] = user.ID
 		// return c.Status(400).SendString("Please set the bot token on the setting")
 	}
 	return c.Next()

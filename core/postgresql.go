@@ -24,7 +24,7 @@ func NewPostgresDB() *bun.DB {
 	postgresDB = bun.NewDB(sqldb, pgdialect.New())
 	postgresDB.SetMaxOpenConns(1)
 
-	MigrateTables(&entity.DisabledCmdEntity{})
+	MigrateTables(&entity.DisabledCmdEntity{}, &entity.NoteEntity{})
 	return postgresDB
 }
 

@@ -23,7 +23,9 @@ type ConnectParams struct {
 }
 
 // fix error import cycle
-type LogMiddleware struct{}
+type LogMiddleware struct {
+	Id string
+}
 
 var (
 	_ ken.MiddlewareBefore = (*LogMiddleware)(nil)
@@ -31,8 +33,8 @@ var (
 
 func (c *LogMiddleware) Before(ctx *ken.Ctx) (next bool, err error) {
 	cmd := ctx.GetCommand()
-	token := ctx.GetSession().Token
-	SendLog(FindIdByToken(token), fmt.Sprintf("Execute: %s", cmd.Name()))
+	ctx.Set("User-Id", c.Id)
+	SendLog(c.Id, fmt.Sprintf("Execute: %s", cmd.Name()))
 	next = true
 	return
 }
@@ -67,8 +69,20 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 	}
 
 	k.RegisterMiddlewares(
-		new(LogMiddleware),
+		&LogMiddleware{
+			Id: params.Id,
+		},
 	)
+
+	k.Session().AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if m.GuildID != "" || m.Author.ID == s.State.User.ID {
+			return
+		}
+		note, _ := repo.NoteRepository.Get(params.Id, m.GuildID, m.Content)
+		if note.Value != "" {
+			s.ChannelMessageSend(m.ChannelID, note.Value)
+		}
+	})
 
 	k.Session().AddHandlerOnce(func(s *discordgo.Session, evt *discordgo.Connect) {
 		Clients[params.Id] = k
