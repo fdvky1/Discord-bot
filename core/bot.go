@@ -78,6 +78,10 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 		if m.GuildID == "" || m.Author.ID == s.State.User.ID {
 			return
 		}
+		noteIsDisabled := slices.IndexFunc(disabledCmds, func(v entity.DisabledCmdEntity) bool { return v.Cmd == "note" })
+		if noteIsDisabled > -1 {
+			return
+		}
 		note, _ := repo.NoteRepository.Get(params.Id, m.GuildID, m.Content)
 		if note.Value != "" {
 			s.ChannelMessageSend(m.ChannelID, note.Value)
