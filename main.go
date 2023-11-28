@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/fdvky1/Discord-bot/core"
@@ -25,7 +24,7 @@ var bunDB *bun.DB
 func init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.Println("Error loading .env file")
 	}
 	core.Clients = make(map[string]*ken.Ken)
 	core.WSClients = core.WebSocketClients{
