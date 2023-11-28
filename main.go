@@ -38,7 +38,6 @@ func init() {
 	bunDB = core.NewPostgresDB()
 	_ = repo.NewDisabledCmdRepository(bunDB)
 	_ = repo.NewNoteRepository(bunDB)
-	// repo.DisabledCmdRepository = disabledCmdRepo
 }
 
 func AuthMiddleware(c *fiber.Ctx) error {
@@ -64,8 +63,6 @@ func AuthMiddleware(c *fiber.Ctx) error {
 
 	if len(response) > 0 {
 		c.Locals("Bot-Token", response[0].BotToken)
-		// core.Cached[response[0].BotToken] = user.ID
-		// return c.Status(400).SendString("Please set the bot token on the setting")
 	}
 	return c.Next()
 }
@@ -73,10 +70,6 @@ func AuthMiddleware(c *fiber.Ctx) error {
 func main() {
 	app := fiber.New()
 
-	// app.Use(func(c *fiber.Ctx) error {
-	// 	c.Set("Access-Control-Allow-Origin", "*")
-	// 	return c.Next()
-	// })
 	app.Use(cors.New(cors.Config{
 		AllowHeaders:     "Authorization, Origin, Content-Type, Accept, Content-Length, Accept-Language, Accept-Encoding, Connection, Access-Control-Allow-Origin",
 		AllowOrigins:     "*",

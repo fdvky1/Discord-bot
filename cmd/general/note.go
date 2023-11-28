@@ -93,8 +93,9 @@ func (c *NoteCommand) Autocomplete(ctx *ken.AutocompleteContext) ([]*discordgo.A
 
 func (c *NoteCommand) Run(ctx ken.Context) (err error) {
 	opt := ctx.Options().GetByName("options").StringValue()
+	UserId := ctx.Get("User-Id").(string)
 	if opt == "list" {
-		notes, _ := repo.NoteRepository.GetAll(ctx.Get("User-Id").(string), ctx.GetEvent().GuildID)
+		notes, _ := repo.NoteRepository.GetAll(UserId, ctx.GetEvent().GuildID)
 		text := "Notes:\n"
 		for _, note := range notes {
 			text += fmt.Sprintf("> %s\n", note.Key)
@@ -106,7 +107,7 @@ func (c *NoteCommand) Run(ctx ken.Context) (err error) {
 			note, ok := ctx.Options().GetByNameOptional("note")
 			if ok {
 				err := repo.NoteRepository.PutNote(entity.NoteEntity{
-					Id:      ctx.Get("User-Id").(string),
+					Id:      UserId,
 					GuildId: ctx.GetEvent().GuildID,
 					Key:     key.StringValue(),
 					Value:   note.StringValue(),
@@ -117,7 +118,7 @@ func (c *NoteCommand) Run(ctx ken.Context) (err error) {
 				return ctx.RespondMessage(fmt.Sprintf("The note with key \"%s\" was saved successfully", key.StringValue()))
 			}
 		} else if ok {
-			err := repo.NoteRepository.RemoveNote(ctx.Get("User-Id").(string), ctx.GetEvent().GuildID, key.StringValue())
+			err := repo.NoteRepository.RemoveNote(UserId, ctx.GetEvent().GuildID, key.StringValue())
 			if err != nil {
 				return ctx.RespondMessage(fmt.Sprintf("Error %v", err))
 			}

@@ -99,7 +99,6 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 		SendLog(params.Id, "Bot is disconnected from Discord.")
 	})
 
-	// defer k.Unregister()
 	err = session.Open()
 	if err != nil {
 		return nil, err
