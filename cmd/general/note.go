@@ -119,7 +119,7 @@ func (c *NoteCommand) Run(ctx ken.Context) (err error) {
 				return ctx.RespondMessage(fmt.Sprintf("The note with key \"%s\" was saved successfully", key.StringValue()))
 			}
 		} else if ok {
-			if key.StringValue() == "get" {
+			if opt == "get" {
 				note, err := repo.NoteRepository.Get(UserId, ctx.GetEvent().GuildID, key.StringValue())
 				if err != nil {
 					return ctx.RespondMessage(fmt.Sprintf("Error %v", err))
