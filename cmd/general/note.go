@@ -13,6 +13,7 @@ import (
 
 var noteOptions = [][]string{
 	{"list", "List"},
+	{"get", "Get"},
 	{"add", "Add"},
 	{"remove", "Remove"},
 }
@@ -118,11 +119,19 @@ func (c *NoteCommand) Run(ctx ken.Context) (err error) {
 				return ctx.RespondMessage(fmt.Sprintf("The note with key \"%s\" was saved successfully", key.StringValue()))
 			}
 		} else if ok {
-			err := repo.NoteRepository.RemoveNote(UserId, ctx.GetEvent().GuildID, key.StringValue())
-			if err != nil {
-				return ctx.RespondMessage(fmt.Sprintf("Error %v", err))
+			if key.StringValue() == "get" {
+				note, err := repo.NoteRepository.Get(UserId, ctx.GetEvent().GuildID, key.StringValue())
+				if err != nil {
+					return ctx.RespondMessage(fmt.Sprintf("Error %v", err))
+				}
+				return ctx.RespondMessage(note.Value)
+			} else {
+				err := repo.NoteRepository.RemoveNote(UserId, ctx.GetEvent().GuildID, key.StringValue())
+				if err != nil {
+					return ctx.RespondMessage(fmt.Sprintf("Error %v", err))
+				}
+				return ctx.RespondMessage(fmt.Sprintf("The note with key \"%s\" was deleted successfully", key.StringValue()))
 			}
-			return ctx.RespondMessage(fmt.Sprintf("The note with key \"%s\" was deleted successfully", key.StringValue()))
 		}
 	}
 	return ctx.RespondMessage("Invalid")
