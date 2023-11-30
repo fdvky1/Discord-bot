@@ -94,10 +94,11 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 	})
 
 	k.Session().AddHandlerOnce(func(s *discordgo.Session, evt *discordgo.Disconnect) {
-		k.Unregister()
 		SendLog(params.Id, "Bot is disconnected from Discord.")
-		if Clients[params.Id] != nil {
-			Connect(params)
+		if Clients[params.Id] == nil {
+			k.Unregister()
+		} else {
+			s.Open()
 		}
 	})
 
