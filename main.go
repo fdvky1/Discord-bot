@@ -119,7 +119,10 @@ func main() {
 
 		session := core.Clients[c.Locals("User-Id").(string)]
 		if session != nil {
-			session.Session().Close()
+			if err := session.Session().Close(); err != nil {
+				return c.Status(500).SendString("Internal server error")
+			}
+			return c.SendStatus(200)
 		}
 
 		if _, err := core.Connect(core.ConnectParams{
@@ -137,6 +140,8 @@ func main() {
 		if session == nil {
 			return c.Status(400).SendString("Bot hasnt started")
 		}
+
+		delete(core.Clients, c.Locals("User-Id").(string))
 
 		if err := session.Session().Close(); err != nil {
 			return c.Status(500).SendString("Internal server error")

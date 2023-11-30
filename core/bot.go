@@ -74,7 +74,7 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 		},
 	)
 
-	k.Session().AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+	k.Session().AddHandlerOnce(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.GuildID == "" || m.Author.ID == s.State.User.ID {
 			return
 		}
@@ -94,9 +94,11 @@ func Connect(params ConnectParams) (*ken.Ken, error) {
 	})
 
 	k.Session().AddHandlerOnce(func(s *discordgo.Session, evt *discordgo.Disconnect) {
-		delete(Clients, params.Id)
 		k.Unregister()
 		SendLog(params.Id, "Bot is disconnected from Discord.")
+		if Clients[params.Id] != nil {
+			Connect(params)
+		}
 	})
 
 	err = session.Open()
