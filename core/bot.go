@@ -2,110 +2,86 @@ package core
 
 import (
 	"fmt"
-
-	_ "github.com/fdvky1/Discord-bot/cmd"
-	"github.com/fdvky1/Discord-bot/embed"
-	"github.com/fdvky1/Discord-bot/entity"
-	"github.com/fdvky1/Discord-bot/repo"
+	"slices"
 
 	"github.com/bwmarrin/discordgo"
+	_ "github.com/fdvky1/Discord-bot/cmd"
+	"github.com/fdvky1/Discord-bot/embed"
+	"github.com/fdvky1/Discord-bot/repo"
 	"github.com/zekrotja/ken"
-	"golang.org/x/exp/slices"
 )
 
-var Clients BotClient
+var Clients map[string]*ken.Ken
 
-type BotClient map[string]*ken.Ken
-
-type ConnectParams struct {
-	Id    string
-	Token string
+func init() {
+	Clients = make(map[string]*ken.Ken)
 }
 
-// fix error import cycle
-type LogMiddleware struct {
-	Id string
-}
-
-var (
-	_ ken.MiddlewareBefore = (*LogMiddleware)(nil)
-)
-
-func (c *LogMiddleware) Before(ctx *ken.Ctx) (next bool, err error) {
-	cmd := ctx.GetCommand()
-	ctx.Set("User-Id", c.Id)
-	SendLog(c.Id, fmt.Sprintf("Execute: %s", cmd.Name()))
-	next = true
-	return
-}
-
-func Connect(params ConnectParams) (*ken.Ken, error) {
-	session, err := discordgo.New(params.Token)
+func StartBot(id string, token string) (*ken.Ken, error) {
+	session, err := discordgo.New(token)
 	if err != nil {
 		return nil, err
 	}
-	// defer session.Close()
+
 	k, err := ken.New(session)
 	if err != nil {
 		return nil, err
 	}
 
-	disabledCmds, _ := repo.DisabledCmdRepository.GetDisabledCmd(params.Id)
-	var availableCmds []ken.Command
+	disabledCmds, _ := repo.DisabledCmdRepository.GetDisabledCmd(id)
+	var cmds []ken.Command
 
-	for name, v := range embed.Cmds {
-		c, ok := v.(ken.Command)
-		isDisabled := slices.IndexFunc(disabledCmds, func(v entity.DisabledCmdEntity) bool { return v.Cmd == name })
-		if ok && isDisabled == -1 {
-			// fmt.Printf("Load: %s\n", name)
-			availableCmds = append(availableCmds, c)
+	for name, c := range embed.Cmds {
+		if !slices.Contains(disabledCmds, name) {
+			cmd, ok := c.(ken.Command)
+			if ok {
+				cmds = append(cmds, cmd)
+			}
 		}
 	}
 
-	if len(availableCmds) > 0 {
+	if len(cmds) > 0 {
 		k.RegisterCommands(
-			availableCmds...,
+			cmds...,
 		)
 	}
 
 	k.RegisterMiddlewares(
-		&LogMiddleware{
-			Id: params.Id,
+		&logMiddleware{
+			Id: id,
 		},
 	)
 
-	k.Session().AddHandlerOnce(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		if m.GuildID == "" || m.Author.ID == s.State.User.ID {
-			return
-		}
-		noteIsDisabled := slices.IndexFunc(disabledCmds, func(v entity.DisabledCmdEntity) bool { return v.Cmd == "note" })
-		if noteIsDisabled > -1 {
-			return
-		}
-		note, _ := repo.NoteRepository.Get(params.Id, m.GuildID, m.Content)
-		if note.Value != "" {
-			s.ChannelMessageSend(m.ChannelID, note.Value)
-		}
+	session.AddHandler(func(s *discordgo.Session, evt *discordgo.Connect) {
+		repo.ActiveRepository.Update(id, true)
+		SendLog(id, "Bot is connected to Discord.")
 	})
 
-	k.Session().AddHandlerOnce(func(s *discordgo.Session, evt *discordgo.Connect) {
-		Clients[params.Id] = k
-		SendLog(params.Id, "Bot is connected to Discord.")
-	})
-
-	k.Session().AddHandlerOnce(func(s *discordgo.Session, evt *discordgo.Disconnect) {
-		SendLog(params.Id, "Bot is disconnected from Discord.")
-		if Clients[params.Id] == nil {
-			k.Unregister()
-		} else {
+	session.AddHandler(func(s *discordgo.Session, evt *discordgo.Disconnect) {
+		SendLog(id, "Bot is disconnected from Discord.")
+		if Clients[id] != nil {
 			s.Open()
+		} else {
+			k.Unregister()
 		}
 	})
 
 	err = session.Open()
-	if err != nil {
-		return nil, err
-	}
+	return k, err
+}
 
-	return k, nil
+type logMiddleware struct {
+	Id string
+}
+
+var (
+	_ ken.MiddlewareBefore = (*logMiddleware)(nil)
+)
+
+func (mid *logMiddleware) Before(ctx *ken.Ctx) (next bool, err error) {
+	cmd := ctx.GetCommand()
+	ctx.Set("User-Id", mid.Id)
+	SendLog(mid.Id, fmt.Sprintf("Execute: %s", cmd.Name()))
+	next = true
+	return
 }

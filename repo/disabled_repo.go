@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fdvky1/Discord-bot/entity"
-
 	"github.com/uptrace/bun"
 )
 
@@ -48,14 +46,14 @@ func (repository disabledCmdRepository) EnableCmd(id string, name string) error 
 	return nil
 }
 
-func (repository disabledCmdRepository) GetDisabledCmd(id string) ([]entity.DisabledCmdEntity, error) {
-	var result []entity.DisabledCmdEntity
+func (repository disabledCmdRepository) GetDisabledCmd(id string) ([]string, error) {
+	cmds := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	if err := repository.DB.NewSelect().Model(&result).Where("id = ?", id).Scan(ctx); err != nil {
-		return result, err
+	if err := repository.DB.NewSelect().NewRaw("SELECT command_name FROM disabled_cmd WHERE id = ?", id).Scan(ctx, &cmds); err != nil {
+		return cmds, err
 	}
 
-	return result, nil
+	return cmds, nil
 }
